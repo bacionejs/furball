@@ -1,88 +1,409 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tilt Maze</title>
+<meta charset="UTF-8">
+<title>Vertical Scroller Physics Jump</title>
 <style>
-body{margin:0;overflow:hidden;background:#eee}
-canvas{display:block;background:#ccc}
+  body { margin: 0; overflow: hidden; }
+  canvas { display: block; position: absolute; top: 0; left: 0; }
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
+<canvas id="background"></canvas>
+<canvas id="game"></canvas>
 <script>
-let c=document.getElementById('c'),ctx=c.getContext('2d');
-c.width=window.innerWidth;c.height=window.innerHeight;
 
-let cw=c.width,ch=c.height;
-let player={x:50,y:50,r:15,vx:0,vy:0};
-let maze=[
-[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-[1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-[1,0,1,1,0,1,1,1,1,0,1,1,0,0,1],
-[1,0,0,1,0,0,0,0,1,0,1,0,0,0,1],
-[1,1,0,1,1,1,0,0,1,0,1,0,1,0,1],
-[1,0,0,0,0,1,0,1,1,0,0,0,1,0,1],
-[1,0,1,1,0,0,0,0,0,0,1,0,0,0,1],
-[1,0,0,1,1,1,1,1,1,1,1,1,1,0,1],
-[1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-];
-let cellW=cw/maze[0].length,cellH=ch/maze.length;
 
-let holes=[
-{cx:200,cy:200,r:20},
-{cx:400,cy:100,r:25},
-{cx:300,cy:400,r:15}
-];
 
-let tiltX=0,tiltY=0;
-window.addEventListener('deviceorientation',e=>{
-tiltX=e.gamma||0; tiltY=e.beta||0;
+
+
+// Add at the top, after player definition
+let score = 0;
+
+
+
+
+
+// ------------------------
+// Procedural Clouds Function
+// ------------------------
+function createProceduralClouds(canvas) {
+  if (!canvas) {
+    canvas = document.createElement("canvas");
+    document.body.appendChild(canvas);
+  }
+  canvas.style.zIndex = "-1"; // behind game canvas
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  let c = canvas.getContext("2d");
+  let layers = [];
+
+  function generateClouds() {
+    let w = window.innerWidth;
+    let h = window.innerHeight;
+    canvas.width = w;
+    canvas.height = h;
+    layers = [];
+    let b = [];
+
+    for (let i = 0; i < 6; i++) {
+      let layer = document.createElement("canvas");
+      layer.width = w;
+      layer.height = h;
+      let s = layer.getContext("2d");
+      let Z = document.createElement("canvas");
+      Z.width = Z.height = 60;
+      let z = Z.getContext("2d");
+
+      for (let j = 1e4; j--;) b[j] = Math.random();
+      let g = 0.2 + Math.random() * 0.8;
+      let e = 5 + 40 * Math.random();
+      let hsl1 = `hsl(${200 + 80 * Math.random()},100%,${e + 20 * Math.random()}%)`;
+      let hsl2 = `hsl(${200 + 180 * Math.random()},100%,${e + 20 * Math.random()}%)`;
+      let grad = z.createLinearGradient(0, 0, 0, 60);
+      grad.addColorStop(0, hsl1);
+      grad.addColorStop(1, hsl2);
+      z.fillStyle = grad;
+
+      for (let f = 300; f--;) for (let x = 30; f / 9 < x--;) z.fillRect(
+        30 + x * Math.cos(f) * Math.cos(f * Math.sin(f)),
+        30 + x * Math.sin(f),
+        0.9, 0.9
+      );
+
+      for (let f = 1e4; f--;) {
+        s.globalAlpha = g * b[i] * (1 - f / 1e4);
+        s.drawImage(
+          Z,
+          30 * Math.random() * h / b[i] - 20 * h / 2,
+          f / 1e4 * h,
+          h / 2 + Math.random() * h / 2 * (1 - f / 1e4),
+          Math.random() * h / 8 * (1 - f / 1e4)
+        );
+      }
+
+      let overlay = s.createLinearGradient(0, 0, 0, h);
+      overlay.addColorStop(0, 'rgba(255,255,255,0.1)');
+      overlay.addColorStop(1, 'rgba(255,255,255,0)');
+      s.fillStyle = overlay;
+      s.fillRect(0, 0, w, h);
+
+      layers.push(layer);
+    }
+
+    for (let i = 0; i < layers.length; i++) c.drawImage(layers[i], 0, 0);
+  }
+
+  generateClouds();
+  window.addEventListener("resize", generateClouds);
+  return { regenerate: generateClouds, canvas: canvas };
+}
+
+// Create cloud background
+createProceduralClouds(document.getElementById('background'));
+
+// ------------------------
+// Game Setup
+// ------------------------
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// Platforms
+let platforms = [];
+const platformSpacing = 100;
+const platformSpeed = 1;
+const platformWidth = 80;
+const platformHeight = 10;
+let maxOscillation = canvas.width / 3;
+
+function initPlatforms() {
+  platforms = [];
+  for (let y = 0; y < canvas.height; y += platformSpacing) {
+    const baseX = Math.random() * (canvas.width - platformWidth - maxOscillation) + maxOscillation / 2;
+    platforms.push({ baseX, x: baseX, y, w: platformWidth, h: platformHeight, phase: Math.random() * Math.PI * 2 });
+  }
+}
+initPlatforms();
+
+// Player
+const player = { size: 30, x: 0, y: 0, vx: 0, vy: 0, jumping: false, angle: 0, onPlatform: null };
+player.x = platforms[0].x + (platformWidth - player.size) / 2;
+player.y = platforms[0].y - player.size;
+player.onPlatform = platforms[0];
+
+// Physics
+const gravity = 0.5;
+const jumpStrength = -14;
+
+
+
+
+
+
+
+// --- Fall Sound Function ---
+function playFallSound() {
+  f = function(i){
+    var n = 5e4;
+    if (i > n) return null;
+    return ((Math.pow(i,0.9)&200)?1:-1)*Math.pow(t(i,n),3);
+  }
+  t = (i,n) => (n-i)/n;
+  let A = new AudioContext();
+  let m = A.createBuffer(1, 96e3, 48e3);
+  let b = m.getChannelData(0);
+  for(let i=96e3;i--;) b[i]=f(i);
+  let s = A.createBufferSource();
+  s.buffer = m;
+  s.connect(A.destination);
+  s.start();
+}
+
+
+
+
+
+
+
+
+
+canvas.addEventListener('click', e => {
+  if (player.jumping) return;
+  
+  // --- Jump Sound ---
+  playJumpSound();
+
+  const clickX = e.offsetX;
+  let dx = clickX - canvas.width / 2;
+  dx = Math.max(-100, Math.min(100, dx));
+  player.vx = dx * 0.05;
+  player.vy = jumpStrength;
+  player.jumping = true;
+  player.onPlatform = null;
 });
 
-function draw(){
-ctx.clearRect(0,0,cw,ch);
-// draw maze
-for(let i=0;i<maze.length;i++){
-for(let j=0;j<maze[i].length;j++){
-if(maze[i][j]){
-ctx.fillStyle="#333";
-ctx.fillRect(j*cellW,i*cellH,cellW,cellH);
-}}}
-// draw holes
-ctx.fillStyle="black";
-holes.forEach(h=>ctx.beginPath(),ctx.arc(h.cx,h.cy,h.r,0,7),ctx.fill());
-// draw player
-ctx.fillStyle="red";
+// --- Jump Sound Function ---
+function playJumpSound() {
+  f = function(i){
+    var n = 1e4;
+    if (i>n) return null;
+    return ((Math.pow(i,1.055)&128)?1:-1)*Math.pow(t(i,n),2);
+  }
+  t=(i,n)=>(n-i)/n;
+  let A=new AudioContext();
+  let m=A.createBuffer(1,96e3,48e3);
+  let b=m.getChannelData(0);
+  for(let i=96e3;i--;) b[i]=f(i);
+  let s=A.createBufferSource();
+  s.buffer=m;
+  s.connect(A.destination);
+  s.start();
+}
+
+
+
+
+function drawCat2(x, y, size, angle) {
+  const sides = 13;
+  const radius = size / 2;
+  ctx.save();
+  ctx.translate(x + radius, y + radius);
+  ctx.rotate(angle);
+  ctx.beginPath();
+  for (let i = 0; i < sides; i++) {
+    const theta = (i / sides) * 2 * Math.PI;
+    const px = radius * Math.cos(theta);
+    const py = radius * Math.sin(theta);
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = 'black';
+  ctx.fill();
+  // Eyes
+  const eyeOffsetX = radius * 0.4;
+  const eyeOffsetY = -radius * 0.2;
+  const eyeSize = radius * 0.2;
+  ctx.fillStyle = 'lime';
+  ctx.beginPath();
+  ctx.arc(-eyeOffsetX, eyeOffsetY, eyeSize, 0, 2 * Math.PI);
+  ctx.arc(eyeOffsetX, eyeOffsetY, eyeSize, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.restore();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function drawCat(x, y, size, angle) {
+  const radius = size / 2;
+  ctx.save();
+ctx.globalAlpha = 0.7; // 0 = fully transparent, 1 = fully opaque
+  ctx.translate(x + radius, y + radius);
+  ctx.rotate(angle);
+
+  // Create spherical gradient: center black, edge white
+  const grad = ctx.createRadialGradient(0, 0, radius * 0.1, 0, 0, radius);
+  grad.addColorStop(0, 'black');
+  grad.addColorStop(1, 'gray');
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, 2 * Math.PI);
+  ctx.fill();
+
+  // Slanted cat eyes
+const eyeOffsetX = radius * 0.4;
+const eyeOffsetY = -radius * 0.2;
+const eyeWidth = radius * 0.1;
+const eyeHeight = radius * 0.3;
+ctx.fillStyle = 'lime';
+
+// Left eye
+ctx.save();
+ctx.translate(-eyeOffsetX, eyeOffsetY);
+ctx.rotate(-Math.PI / 3); // slant
 ctx.beginPath();
-ctx.arc(player.x,player.y,player.r,0,7);
+ctx.ellipse(0, 0, eyeWidth, eyeHeight, 0, 0, 2 * Math.PI);
 ctx.fill();
+ctx.restore();
+
+// Right eye
+ctx.save();
+ctx.translate(eyeOffsetX, eyeOffsetY);
+ctx.rotate(Math.PI / 3); // slant
+ctx.beginPath();
+ctx.ellipse(0, 0, eyeWidth, eyeHeight, 0, 0, 2 * Math.PI);
+ctx.fill();
+ctx.restore();
+
+  ctx.restore();
 }
 
-function update(){
-player.vx+=tiltX*0.05;
-player.vy+=tiltY*0.05;
-player.vx*=0.9;
-player.vy*=0.9;
-player.x+=player.vx;
-player.y+=player.vy;
-// collide walls
-let px=Math.floor(player.y/cellH),py=Math.floor(player.x/cellW);
-if(maze[px]&&maze[px][py]){
-player.x-=player.vx;
-player.y-=player.vy;
-player.vx=0;player.vy=0;
-}
-// collide holes
-for(let h of holes){
-let dx=player.x-h.cx,dy=player.y-h.cy;
-if(dx*dx+dy*dy<h.r*h.r){
-player.x=50;player.y=50;player.vx=0;player.vy=0;
-}}
+
+
+
+// Game loop
+let frame = 0;
+function loop() {
+  frame++;
+
+  // Clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Move platforms down and oscillate
+  platforms.forEach(p => {
+    p.y += platformSpeed;
+    const oscillationSpeed = 0.02;
+    const prevX = p.x;
+    p.x = p.baseX + Math.sin(frame * oscillationSpeed + p.phase) * maxOscillation / 2;
+
+    if (player.onPlatform === p && !player.jumping) player.x += p.x - prevX;
+
+    if (p.y > canvas.height) {
+      p.y = -platformHeight;
+      p.baseX = Math.random() * (canvas.width - platformWidth - maxOscillation) + maxOscillation / 2;
+      p.phase = Math.random() * Math.PI * 2;
+    }
+
+
+ctx.fillStyle = 'rgba(0,0,0,0.4)'; // semi-transparent white
+const radius = 8; // corner radius
+ctx.beginPath();
+ctx.moveTo(p.x + radius, p.y);
+ctx.lineTo(p.x + p.w - radius, p.y);
+ctx.quadraticCurveTo(p.x + p.w, p.y, p.x + p.w, p.y + radius);
+ctx.lineTo(p.x + p.w, p.y + p.h - radius);
+ctx.quadraticCurveTo(p.x + p.w, p.y + p.h, p.x + p.w - radius, p.y + p.h);
+ctx.lineTo(p.x + radius, p.y + p.h);
+ctx.quadraticCurveTo(p.x, p.y + p.h, p.x, p.y + p.h - radius);
+ctx.lineTo(p.x, p.y + radius);
+ctx.quadraticCurveTo(p.x, p.y, p.x + radius, p.y);
+ctx.fill();
+
+
+
+
+  });
+
+  // Player physics
+  if (player.jumping) {
+    player.vy += gravity;
+    player.y += player.vy;
+    player.x += player.vx;
+    player.angle += player.vx * 0.05;
+
+    let landed = false;
+    platforms.forEach(p => {
+      if (player.vy > 0 &&
+          player.x + player.size > p.x &&
+          player.x < p.x + p.w &&
+          player.y + player.size > p.y &&
+          player.y + player.size < p.y + player.vy + 1) {
+        player.vy = 0;
+        player.jumping = false;
+        player.y = p.y - player.size;
+        player.angle = 0;
+
+
+
+
+
+
+    if (player.onPlatform !== p) {
+      // Only add score if landing on a new platform
+      score += 1;
+    }
+
+
+
+
+        player.onPlatform = p;
+        landed = true;
+      }
+    });
+    if (!landed) player.onPlatform = null;
+  } else player.y += platformSpeed;
+
+  // Reset if player falls
+  if (player.y > canvas.height) {
+  playFallSound();
+  score -= 5; // Subtract points for falling
+    const middle = Math.floor(platforms.length / 2);
+    const p = platforms[middle];
+    player.x = p.x + (platformWidth - player.size) / 2;
+    player.y = p.y - player.size;
+    player.vx = 0;
+    player.vy = 0;
+    player.jumping = false;
+    player.angle = 0;
+    player.onPlatform = p;
+  }
+
+  drawCat(player.x, player.y, player.size, player.angle);
+ctx.fillStyle = 'black';
+ctx.font = '24px Arial';
+ctx.fillText(`Score: ${score}`, 20, 40);
+  requestAnimationFrame(loop);
 }
 
-function loop(){update();draw();requestAnimationFrame(loop);}
 loop();
 </script>
 </body>
