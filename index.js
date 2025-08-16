@@ -45,6 +45,17 @@ player.onPlatform = plats[0];
 
 
 
+function drawPlatform(ctx, p) {
+ctx.fillStyle = 'rgba(0,0,0,0.4)';
+ctx.save();
+ctx.translate(p.x + p.w/2, p.y + p.h/2);
+ctx.scale(p.w/2, p.h/2);
+ctx.beginPath();
+ctx.arc(0, 0, 1, 0, Math.PI * 2);
+ctx.closePath();
+ctx.fill();
+ctx.restore();
+}
 
 
 
@@ -67,19 +78,7 @@ plats.forEach(p => {
     p.baseX = Math.random() * (W - pwidth - poscill) + poscill / 2;
     p.phase = Math.random() * Math.PI * 2;
   }
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  const radius = 8;
-  ctx.beginPath();
-  ctx.moveTo(p.x + radius, p.y);
-  ctx.lineTo(p.x + p.w - radius, p.y);
-  ctx.quadraticCurveTo(p.x + p.w, p.y, p.x + p.w, p.y + radius);
-  ctx.lineTo(p.x + p.w, p.y + p.h - radius);
-  ctx.quadraticCurveTo(p.x + p.w, p.y + p.h, p.x + p.w - radius, p.y + p.h);
-  ctx.lineTo(p.x + radius, p.y + p.h);
-  ctx.quadraticCurveTo(p.x, p.y + p.h, p.x, p.y + p.h - radius);
-  ctx.lineTo(p.x, p.y + radius);
-  ctx.quadraticCurveTo(p.x, p.y, p.x + radius, p.y);
-  ctx.fill();
+  drawPlatform(ctx,p);
 });
 
 // Player physics
@@ -225,44 +224,6 @@ for (let i = 0; i < 6; i++) {
 for (let i = 0; i < layers.length; i++) c.drawImage(layers[i], 0, 0);
 }//clouds
 
-function cat(x, y, size, angle) {
-const radius = size / 2;
-ctx.save();
-ctx.globalAlpha = 0.7;
-ctx.translate(x + radius, y + radius);
-ctx.rotate(angle);
-const grad = ctx.createRadialGradient(0, 0, radius * 0.1, 0, 0, radius);
-grad.addColorStop(0, 'black');
-grad.addColorStop(1, 'rgb(0,0,0,0.5)');
-ctx.fillStyle = grad;
-ctx.beginPath();
-ctx.arc(0, 0, radius, 0, 2 * Math.PI);
-ctx.fill();
-// Slanted cat eyes
-const eyeOffsetX = radius * 0.4;
-const eyeOffsetY = -radius * 0.2;
-const eyeWidth = radius * 0.1;
-const eyeHeight = radius * 0.3;
-ctx.fillStyle = 'lime';
-// Left eye
-ctx.save();
-ctx.translate(-eyeOffsetX, eyeOffsetY);
-ctx.rotate(-Math.PI / 3); // slant
-ctx.beginPath();
-ctx.ellipse(0, 0, eyeWidth, eyeHeight, 0, 0, 2 * Math.PI);
-ctx.fill();
-ctx.restore();
-// Right eye
-ctx.save();
-ctx.translate(eyeOffsetX, eyeOffsetY);
-ctx.rotate(Math.PI / 3); // slant
-ctx.beginPath();
-ctx.ellipse(0, 0, eyeWidth, eyeHeight, 0, 0, 2 * Math.PI);
-ctx.fill();
-ctx.restore();
-ctx.restore();
-}
-
 canvas.addEventListener('click', e => {
 if (player.jumping) return;
 jump();
@@ -274,6 +235,61 @@ player.vy = jumpStrength;
 player.jumping = true;
 player.onPlatform = null;
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+const catImage = makeCatImage(player.size);
+
+function cat(x, y, size, angle) {
+  ctx.save();
+  ctx.translate(x + size / 2, y + size / 2);
+  ctx.rotate(angle);
+  ctx.drawImage(catImage, -size / 2, -size / 2, size, size);
+  ctx.restore();
+}
+
+function makeCatImage(size) {
+  const off = document.createElement("canvas");
+  off.width = off.height = size;
+  const octx = off.getContext("2d");
+
+  octx.save();
+  octx.translate(size / 2, size / 2);
+  octx.scale(size, size);
+
+  // Head
+  octx.fillStyle = "rgb(0,0,0,0.5)";
+  octx.fill(shape([[0, -6, 3, -6, 6, -10, 10, -2, 10, 2, 7, 7, 4, 9, 0, 9]]));
+
+  // Eyes (mirrored automatically)
+  octx.fillStyle = "rgb(0,255,0,0.5)";
+  octx.fill(shape([[2, 0, 3, -2, 5, -3, 5, -1, 2, 0]]));
+
+  octx.restore();
+  return off;
+}
+
+function shape(array,gridsize=20,mirror=true){
+let p=new Path2D;
+for(let i of array){for(let x of mirror?[1,-1]:[1]){p.moveTo(x*i[0]/gridsize,i[1]/gridsize);
+  for(let j=2;j<i.length;j+=2)p.lineTo(x*i[j]/gridsize,i[j+1]/gridsize);
+}}
+return p;
+}
+
+
+
+
 
 
 
