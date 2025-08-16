@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tilt Maze</title>
+<style>
+body{margin:0;overflow:hidden;background:#eee}
+canvas{display:block;background:#ccc}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+let c=document.getElementById('c'),ctx=c.getContext('2d');
+c.width=window.innerWidth;c.height=window.innerHeight;
+
+let cw=c.width,ch=c.height;
+let player={x:50,y:50,r:15,vx:0,vy:0};
+let maze=[
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+[1,0,1,1,0,1,1,1,1,0,1,1,0,0,1],
+[1,0,0,1,0,0,0,0,1,0,1,0,0,0,1],
+[1,1,0,1,1,1,0,0,1,0,1,0,1,0,1],
+[1,0,0,0,0,1,0,1,1,0,0,0,1,0,1],
+[1,0,1,1,0,0,0,0,0,0,1,0,0,0,1],
+[1,0,0,1,1,1,1,1,1,1,1,1,1,0,1],
+[1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+];
+let cellW=cw/maze[0].length,cellH=ch/maze.length;
+
+let holes=[
+{cx:200,cy:200,r:20},
+{cx:400,cy:100,r:25},
+{cx:300,cy:400,r:15}
+];
+
+let tiltX=0,tiltY=0;
+window.addEventListener('deviceorientation',e=>{
+tiltX=e.gamma||0; tiltY=e.beta||0;
+});
+
+function draw(){
+ctx.clearRect(0,0,cw,ch);
+// draw maze
+for(let i=0;i<maze.length;i++){
+for(let j=0;j<maze[i].length;j++){
+if(maze[i][j]){
+ctx.fillStyle="#333";
+ctx.fillRect(j*cellW,i*cellH,cellW,cellH);
+}}}
+// draw holes
+ctx.fillStyle="black";
+holes.forEach(h=>ctx.beginPath(),ctx.arc(h.cx,h.cy,h.r,0,7),ctx.fill());
+// draw player
+ctx.fillStyle="red";
+ctx.beginPath();
+ctx.arc(player.x,player.y,player.r,0,7);
+ctx.fill();
+}
+
+function update(){
+player.vx+=tiltX*0.05;
+player.vy+=tiltY*0.05;
+player.vx*=0.9;
+player.vy*=0.9;
+player.x+=player.vx;
+player.y+=player.vy;
+// collide walls
+let px=Math.floor(player.y/cellH),py=Math.floor(player.x/cellW);
+if(maze[px]&&maze[px][py]){
+player.x-=player.vx;
+player.y-=player.vy;
+player.vx=0;player.vy=0;
+}
+// collide holes
+for(let h of holes){
+let dx=player.x-h.cx,dy=player.y-h.cy;
+if(dx*dx+dy*dy<h.r*h.r){
+player.x=50;player.y=50;player.vx=0;player.vy=0;
+}}
+}
+
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script>
+</body>
+</html>
