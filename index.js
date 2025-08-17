@@ -185,6 +185,7 @@ s.start();
 
 
 function clouds(canvas) {
+// The sky-effect is from Reinder Nijhoff: https://js1k.com/2015-hypetrain/demo/2311
 let layers = [];
 let c = canvas.getContext("2d");
 canvas.width = W;
