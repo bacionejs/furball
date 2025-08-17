@@ -1,4 +1,9 @@
-# furball
 
-The sky-effect is from Reinder Nijhoff: https://js1k.com/2015-hypetrain/demo/2311
 
+
+## Credits
+
+- **Sky Effect**  
+  Based on *“Train Window”* by [Reinder Nijhoff](https://reindernijhoff.net/)  
+  JS1K 2015 Hypetrain, Demo #2311  
+  [View the original demo](https://js1k.com/2015-hypetrain/demo/2311)
