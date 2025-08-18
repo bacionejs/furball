@@ -16,16 +16,10 @@ document.body.append(game,level);
 let maxDx,horizontalFactor,score,W,H,plats,player,frame,gravity,jumpstrength,oscillationspeed,pspace,pspeed,pwidth,pheight,poscill,playersize,catimage;
 const canvas = game;
 const ctx = canvas.getContext('2d');
+window.addEventListener('resize', resize);
 
-
-
-
-
-
-
-
-
-
+resize();
+loop();
 
 canvas.addEventListener('click', e => {
     if (player.jumping) return;
@@ -39,32 +33,9 @@ canvas.addEventListener('click', e => {
     player.onPlatform = null;
 });
 
-
-
-
-
-
-
-
-
-
-
-window.addEventListener('resize', resize);
-
-
-
-
-
-
-
-
-
-
-
 function resize() {
 score = 0;
 frame = 0;
-
 const ASPECT_RATIO = 9 / 16;
 H = window.innerHeight;
 W = H * ASPECT_RATIO;
@@ -72,14 +43,10 @@ if (W > window.innerWidth) {
   W = window.innerWidth;
   H = W / ASPECT_RATIO;
 }
-
 canvas.width = W;
 canvas.height = H;
 canvas.style.left = `${(window.innerWidth - W) / 2}px`;
-
 const scale = H / 600;
-
-// Scale game variables using scale factor
 gravity = 0.5 * scale;              // gravity
 jumpstrength = -12 * scale;         // jump power
 pspace = 90 * scale;                // platform vertical spacing
@@ -91,10 +58,8 @@ oscillationspeed = 0.02 / scale;    // oscillation speed (inverse scaling)
 playersize = 20 * scale;            // player size
 maxDx = 150 * scale;                // max horizontal movement
 horizontalFactor = 0.05;            // can stay fixed
-ctx.font = `${12 * scale}px monospace`; // scaled font size
-// ctx.lineWidth = 2 * scale;          // scaled stroke width (optional)
-
-// Platforms
+const fontSize = Math.max(10, Math.min(20, 10 * scale));
+ctx.font = `${fontSize}px monospace`;
 plats = [];
 for (let y = 0; y < H; y += pspace) {
   const baseX = Math.random() * (W - pwidth - poscill) + poscill / 2;
@@ -107,8 +72,6 @@ for (let y = 0; y < H; y += pspace) {
     phase: Math.random() * Math.PI * 2
   });
 }
-
-// Player
 player = {
   size: playersize,
   x: plats[0].x + (pwidth - playersize) / 2,
@@ -119,22 +82,8 @@ player = {
   angle: 0,
   onPlatform: plats[0]
 };
-
 catimage = makeCatImage(player.size);
 }
-
-
-
-
-
-
-
-
-
-
-
-resize();
-loop();
 
 function loop() {
 frame+=(pspeed/5);
@@ -199,16 +148,6 @@ ctx.fillText(`Score: ${score}`, 20, 40);
 requestAnimationFrame(loop);
 }//loop
 
-
-
-
-
-
-
-
-
-
-
 function playSound(type) {
 let t = (i, n) => (n - i) / n;
 let f;
@@ -235,16 +174,6 @@ s.connect(A.destination);
 s.start();
 }
 
-
-
-
-
-
-
-
-
-
-
 function drawPlatform(ctx, p) {
 ctx.save();
 ctx.translate(p.x + p.w/2, p.y + p.h/2);
@@ -256,16 +185,6 @@ ctx.closePath();
 ctx.fill();
 ctx.restore();
 }
-
-
-
-
-
-
-
-
-
-
 
 function drawCat(x, y, size, angle) {
   ctx.save();
