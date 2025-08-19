@@ -37,6 +37,7 @@ function start(){interval=setInterval(loop,1000/FPS);}
 
 function loop(){
 ctx.clearRect(0,0,W,H);
+ctx.strokeStyle = "rgb(255,255,255,0.1)"; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
 updatePlatforms();
 updateCat();
 drawPlatforms();
