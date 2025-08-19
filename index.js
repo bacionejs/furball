@@ -153,10 +153,12 @@ ctx.fillText("Score:"+score,20,40);
 }
 
 function resetPlayer(){
-playSound("fall");
-score-=5;
-const p=plats.reduce((c,plat)=>Math.abs(plat.y-H/2)<Math.abs(c.y-H/2)?plat:c);
-Object.assign(u,{x:p.x,y:p.y-u.size,vx:0,vy:0,jumping:false,angle:0,onplatform:p});
+  // playSound("fall"); 
+  const audio = new Audio("furball.aac");
+  audio.play();
+  score -= 5;
+  const p = plats.reduce((c, plat) => Math.abs(plat.y - H / 2) < Math.abs(c.y - H / 2) ? plat : c);
+  Object.assign(u, {x: p.x, y: p.y - u.size, vx: 0, vy: 0, jumping: false, angle: 0, onplatform: p});
 }
 
 function shape(array,gridsize=20,mirror=true){
