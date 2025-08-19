@@ -1,228 +1,187 @@
-onload = () => {
-const style = document.createElement('style');
-style.textContent=`
-*{margin:0;padding:0;position:fixed;box-sizing:border-box;touch-action:none;user-select:none;} 
-canvas {
-  background: linear-gradient(to top, blue, skyblue);
-}
-body{
-  background: black;
-}
-`;
+onload=()=>{
+document.title="FURBALL";
+const style=document.createElement("style");
+style.textContent=" *{margin:0;padding:0;position:fixed;box-sizing:border-box;touch-action:none;user-select:none;} canvas{background:linear-gradient(to top,blue,skyblue);} body{background:black;} ";
 document.head.appendChild(style);
-const game = document.createElement('canvas');
-let level = Object.assign(document.createElement('input'), {type:"range",value:10,min:1,max:30}); level.addEventListener("input",()=>pspeed=level.value/10);
-document.body.append(game,level);
-let maxDx,horizontalFactor,score,W,H,plats,player,frame,gravity,jumpstrength,oscillationspeed,pspace,pspeed,pwidth,pheight,poscill,playersize,catimage;
-const canvas = game;
-const ctx = canvas.getContext('2d');
-window.addEventListener('resize', resize);
 
+const canvas=document.createElement("canvas");
+let level=Object.assign(document.createElement("input"),{type:"range",value:3,min:1,max:10});
+level.addEventListener("input",()=>pspeed=level.value/10);
+document.body.append(canvas,level);
+
+let FPS=60,interval,maxdx,score=0,W,H,plats,u,gravity,jumpstrength,pspace,pspeed,playersize;
+let platformShape,catHeadShape,catEyeShape;
+let A=new AudioContext();
+const ctx=canvas.getContext("2d");
+
+createPlatform();
+createCat();
 resize();
-loop();
+start();
 
-canvas.addEventListener('click', e => {
-    if (player.jumping) return;
-    playSound("jump");
-    const clickX = e.offsetX;
-    let dx = clickX - W / 2;
-    dx = Math.max(-maxDx, Math.min(maxDx, dx));
-    player.vx = dx * horizontalFactor;
-    player.vy = jumpstrength;
-    player.jumping = true;
-    player.onPlatform = null;
+addEventListener("resize",resize);
+
+addEventListener("visibilitychange",()=>{
+if(document.hidden)clearInterval(interval);
+else start();
 });
 
-function resize() {
-score = 0;
-frame = 0;
-const ASPECT_RATIO = 9 / 16;
-H = window.innerHeight;
-W = H * ASPECT_RATIO;
-if (W > window.innerWidth) {
-  W = window.innerWidth;
-  H = W / ASPECT_RATIO;
-}
-canvas.width = W;
-canvas.height = H;
-canvas.style.left = `${(window.innerWidth - W) / 2}px`;
-const scale = H / 600;
-gravity = 0.5 * scale;              // gravity
-jumpstrength = -12 * scale;         // jump power
-pspace = 90 * scale;                // platform vertical spacing
-pspeed = level.value / 10 * scale;  // platform speed
-pwidth = 60 * scale;               // platform width
-pheight = 10 * scale;               // platform height
-poscill = 180 * scale;              // oscillation range
-oscillationspeed = 0.02 / scale;    // oscillation speed (inverse scaling)
-playersize = 20 * scale;            // player size
-maxDx = 150 * scale;                // max horizontal movement
-horizontalFactor = 0.05;            // can stay fixed
-const fontSize = Math.max(10, Math.min(20, 10 * scale));
-ctx.font = `${fontSize}px monospace`;
-plats = [];
-for (let y = 0; y < H; y += pspace) {
-  const baseX = Math.random() * (W - pwidth - poscill) + poscill / 2;
-  plats.push({
-    baseX,
-    x: baseX,
-    y,
-    w: pwidth,
-    h: pheight,
-    phase: Math.random() * Math.PI * 2
-  });
-}
-player = {
-  size: playersize,
-  x: plats[0].x + (pwidth - playersize) / 2,
-  y: plats[0].y - playersize,
-  vx: 0,
-  vy: 0,
-  jumping: false,
-  angle: 0,
-  onPlatform: plats[0]
-};
-catimage = makeCatImage(player.size);
+canvas.addEventListener("pointerdown",e=>{
+if(u.jumping)return;
+playSound("jump");
+let vx=Math.max(-maxdx,Math.min(maxdx,e.offsetX-W/2))*0.05;
+Object.assign(u,{vx,vy:jumpstrength,jumping:true,onplatform:null});
+});
+
+function start(){interval=setInterval(loop,1000/FPS);}
+
+function loop(){
+ctx.clearRect(0,0,W,H);
+updatePlatforms();
+updateCat();
+drawPlatforms();
+drawCat();
+drawScore();
 }
 
-function loop() {
-frame+=(pspeed/5);
-ctx.clearRect(0, 0, W, H);
-// Move platforms down and oscillate
-plats.forEach(p => {
-  p.y += pspeed;
-  const prevX = p.x;
-  p.x = p.baseX + Math.sin(frame * oscillationspeed + p.phase) * poscill / 2;
-  if (player.onPlatform === p && !player.jumping) player.x += p.x - prevX;
-  if (p.y > H) {
-    p.y = -pheight;
-    p.baseX = Math.random() * (W - pwidth - poscill) + poscill / 2;
-    p.phase = Math.random() * Math.PI * 2;
+function resize(){
+const ASPECT_RATIO=9/16;
+H=window.innerHeight;
+W=H*ASPECT_RATIO;
+if(W>window.innerWidth){W=window.innerWidth;H=W/ASPECT_RATIO;}
+canvas.width=W;
+canvas.height=H;
+canvas.style.left=((window.innerWidth-W)/2)+"px";
+const scale=H/600;
+gravity=0.5*scale;
+jumpstrength=-12*scale;
+pspace=90*scale;
+pspeed=level.value/10*scale;
+playersize=20*scale;
+maxdx=150*scale;
+ctx.font=(Math.max(10,Math.min(20,10*scale)))+"px monospace";
+plats=[];
+for(let y=0;y<H;y+=pspace){
+  const x=Math.random()*W;
+  const vx=(Math.random()<0.5?-1:1)*0.5*scale;
+  plats.push({x,vx,y});
+}
+u={size:playersize,x:plats[0].x,y:plats[0].y-playersize,vx:0,vy:0,jumping:false,angle:0,onplatform:plats[0]};
+}
+
+function createPlatform(){
+  const diamondShape=[[0,0,16,0,20,4,0,20]];
+  platformShape=shape(diamondShape);
+}
+
+function createCat(){
+  const catHead=[[0,-6,3,-6,6,-10,10,-2,10,2,7,7,4,9,0,9]];
+  const catEye=[[2,0,3,-2,5,-3,5,-1,2,0]];
+  catHeadShape=shape(catHead);
+  catEyeShape=shape(catEye);
+}
+
+function updatePlatforms(){
+plats.forEach(p=>{
+  p.x+=p.vx;
+  if(p.x<0)p.x=W;
+  else if(p.x>W)p.x=0;
+  p.y+=pspeed;
+  if(p.y>H){
+    p.y=-playersize;
+    p.x=Math.random()*W;
+    p.vx=(Math.random()<0.5?-1:1)*0.5*(H/600);
   }
-  drawPlatform(ctx,p);
+  if(u.onplatform===p){
+    u.x+=p.vx;
+    if(u.x<0)u.x=W;
+    else if(u.x>W)u.x=0;
+  }
 });
-// Player physics
-if (!player.jumping) {
-  player.y += pspeed;
-} else {
-  player.vy += gravity;
-  player.y += player.vy;
-  player.x += player.vx;
-  player.angle += player.vx * 0.05;
-  let landed = false;
-  plats.forEach(p => {
-    if (player.vy > 0 &&
-      player.x + player.size > p.x &&
-      player.x < p.x + p.w &&
-      player.y + player.size > p.y &&
-      player.y + player.size < p.y + player.vy + 1) {
-      player.vy = 0;
-      player.jumping = false;
-      player.y = p.y - player.size;
-      player.angle = 0;
-      if (player.onPlatform !== p) {
-        score += 1;
-      }
-      player.onPlatform = p;
-      landed = true;
-    }
-  });
-  if (!landed) player.onPlatform = null;
-}
-if (player.y > H) {
-  playSound("fall");
-  score -= 5;
-  const middle = Math.floor(plats.length / 2);
-  const p = plats[middle];
-  player.x = p.x + (pwidth - player.size) / 2;
-  player.y = p.y - player.size;
-  player.vx = 0;
-  player.vy = 0;
-  player.jumping = false;
-  player.angle = 0;
-  player.onPlatform = p;
-}
-drawCat(player.x, player.y, player.size, player.angle);
-ctx.fillStyle = 'black';
-ctx.fillText(`Score: ${score}`, 20, 40);
-requestAnimationFrame(loop);
-}//loop
-
-function playSound(type) {
-let t = (i, n) => (n - i) / n;
-let f;
-if (type === "fall") {
-  f = function (i) {
-    let n = 5e4;
-    if (i > n) return null;
-    return ((Math.pow(i, 0.9) & 200) ? 1 : -1) * Math.pow(t(i, n), 3);
-  };
-} else if (type === "jump") {
-  f = function (i) {
-    let n = 1e4;
-    if (i > n) return null;
-    return ((Math.pow(i, 1.055) & 128) ? 1 : -1) * Math.pow(t(i, n), 2);
-  };
-}
-let A = new AudioContext();
-let m = A.createBuffer(1, 96e3, 48e3);
-let b = m.getChannelData(0);
-for (let i = 96e3; i--;) b[i] = f(i);
-let s = A.createBufferSource();
-s.buffer = m;
-s.connect(A.destination);
-s.start();
 }
 
-function drawPlatform(ctx, p) {
+function drawPlatforms(){
+plats.forEach(p=>{
+  ctx.save();
+  ctx.translate(p.x,p.y);
+  ctx.scale(u.size,u.size);
+  const gradient=ctx.createLinearGradient(-1,-1,1,1);
+  gradient.addColorStop(0,"rgba(255,255,255,0.9)");
+  gradient.addColorStop(0.5,"rgba(200,200,255,0.6)");
+  gradient.addColorStop(1,"rgba(150,150,200,0.3)");
+  ctx.fillStyle=gradient;
+  ctx.fill(platformShape);
+  ctx.restore();
+});
+}
+
+function updateCat(){
+if(!u.jumping){u.y+=pspeed;if(u.y>H)resetPlayer();return;}
+u.vy+=gravity;
+u.y+=u.vy;
+u.x+=u.vx;
+u.angle+=u.vx*0.05;
+if(u.x+u.size<0)u.x=W;
+else if(u.x>W)u.x=-u.size;
+const landed=plats.some(p=>{
+if(u.vy>0&&u.x+u.size>p.x-playersize&&u.x<p.x+playersize&&u.y+u.size>p.y-playersize&&u.y+u.size<p.y+u.vy+1){
+  Object.assign(u,{vy:0,jumping:false,y:p.y-u.size,angle:0});
+  if(u.onplatform!==p)score++;
+  u.onplatform=p;
+  return true;
+}
+});
+if(!landed)u.onplatform=null;
+if(u.y>H)resetPlayer();
+}
+
+function drawCat(){
 ctx.save();
-ctx.translate(p.x + p.w/2, p.y + p.h/2);
-ctx.scale(p.w/2, p.h/2);
-ctx.fillStyle = "rgba(255,255,255,0.3)";
-ctx.beginPath();
-ctx.arc(0, 0, 1, 0, Math.PI * 2);
-ctx.closePath();
-ctx.fill();
+ctx.translate(u.x+u.size/2,u.y+u.size/2);
+ctx.rotate(u.angle);
+ctx.scale(u.size,u.size);
+ctx.fillStyle="rgba(0,0,0,0.7)";
+ctx.fill(catHeadShape);
+ctx.fillStyle="rgba(0,255,0,0.9)";
+ctx.fill(catEyeShape);
 ctx.restore();
 }
 
-function drawCat(x, y, size, angle) {
-  ctx.save();
-  ctx.translate(x + size / 2, y + size / 2);
-  ctx.rotate(angle);
-  ctx.drawImage(catimage, -size / 2, -size / 2, size, size);
-  ctx.restore();
+function drawScore(){
+ctx.fillStyle="black";
+ctx.fillText("Score:"+score,20,40);
 }
 
-function makeCatImage(size) {
-  const off = document.createElement("canvas");
-  off.width = off.height = size;
-  const octx = off.getContext("2d");
-  octx.save();
-  octx.translate(size / 2, size / 2);
-  octx.scale(size, size);
-  octx.fillStyle = "rgb(0,0,0,0.7)"; octx.fill(shape([[0, -6, 3, -6, 6, -10, 10, -2, 10, 2, 7, 7, 4, 9, 0, 9]])); // Head
-  octx.fillStyle = "rgb(0,255,0,0.9)"; octx.fill(shape([[2, 0, 3, -2, 5, -3, 5, -1, 2, 0]])); // Eyes
-  octx.restore();
-  return off;
+function resetPlayer(){
+playSound("fall");
+score-=5;
+const p=plats.reduce((c,plat)=>Math.abs(plat.y-H/2)<Math.abs(c.y-H/2)?plat:c);
+Object.assign(u,{x:p.x,y:p.y-u.size,vx:0,vy:0,jumping:false,angle:0,onplatform:p});
 }
 
 function shape(array,gridsize=20,mirror=true){
-let p=new Path2D;
-for(let i of array){for(let x of mirror?[1,-1]:[1]){p.moveTo(x*i[0]/gridsize,i[1]/gridsize);
-  for(let j=2;j<i.length;j+=2)p.lineTo(x*i[j]/gridsize,i[j+1]/gridsize);
-}}
+let p=new Path2D();
+for(let i of array){
+  for(let x of (mirror?[1,-1]:[1])){
+    p.moveTo(x*i[0]/gridsize,i[1]/gridsize);
+    for(let j=2;j<i.length;j+=2)p.lineTo(x*i[j]/gridsize,i[j+1]/gridsize);
+  }
+}
 return p;
 }
 
-
-
-
-
-
-
-
-
-
+function playSound(type){
+const params={jump:{n:1e4,exp:1.055,mask:128},fall:{n:5e4,exp:0.9,mask:200}}[type];
+if(!params)return;
+let t=(i)=>(params.n-i)/params.n;
+let f=(i)=>i>params.n?null:((Math.pow(i,params.exp)&params.mask)?1:-1)*Math.pow(t(i),type==="jump"?2:3);
+let m=A.createBuffer(1,96e3,48e3);
+let b=m.getChannelData(0);
+for(let i=96e3;i--;)b[i]=f(i);
+let s=A.createBufferSource();
+s.buffer=m;
+s.connect(A.destination);
+s.start();
+}
 
 }
