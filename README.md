@@ -1,3 +1,9 @@
+<h1><a href="https://bacionejs.github.com/furball/" style="text-decoration: none; color: inherit;">Play</a></h1>
+
+[![Demo – Click to Play](README.jpg)](https://bacionejs.github.io/furball/)
+
+
+
 # FURBALL 🐱💨
 
 FURBALL is a minimalist arcade platformer where you guide a little cat leaping across floating diamond platforms in the sky.
