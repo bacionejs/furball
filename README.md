@@ -34,13 +34,6 @@ But be careful — miss a platform and you’ll pay the price!
 
 - **ChatGPT** – My virtual co-developer who never sleeps, never complains, constantly tells me I'm brilliant, and provided questionable wisdom and "perfect" code snippets.
 
-
-
-
-
-Got it 👍 You want a post-mortem write-up for your README, about the control design choice you mentioned (center of screen vs relative to cat). Here’s a draft you could drop into your repo’s README under a “Post-Mortem” or “Design Notes” section:
-
-
 ---
 
 # Post-mortem
