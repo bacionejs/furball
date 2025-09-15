@@ -26,18 +26,37 @@ if(document.hidden)clearInterval(interval);
 else start();
 });
 
-canvas.addEventListener("pointerdown",e=>{
-if(u.jumping)return;
-playSound("jump");
-let vx=Math.max(-maxdx,Math.min(maxdx,e.offsetX-W/2))*0.05;
-Object.assign(u,{vx,vy:jumpstrength,jumping:true,onplatform:null});
+// canvas.addEventListener("pointerdown",e=>{
+// if(u.jumping)return;
+// playSound("jump");
+// let vx=Math.max(-maxdx,Math.min(maxdx,e.offsetX-W/2))*0.05;
+// Object.assign(u,{vx,vy:jumpstrength,jumping:true,onplatform:null});
+// });
+
+
+
+
+
+
+canvas.addEventListener("pointerdown", e=>{
+  if(u.jumping) return;
+  playSound("jump");
+
+  // difference relative to cat center instead of screen center
+  let dx = e.offsetX - (u.x + u.size/2);
+  let vx = Math.max(-maxdx, Math.min(maxdx, dx)) * 0.05;
+
+  Object.assign(u, {vx, vy: jumpstrength, jumping: true, onplatform: null});
 });
+
+
+
 
 function start(){interval=setInterval(loop,1000/FPS);}
 
 function loop(){
 ctx.clearRect(0,0,W,H);
-ctx.strokeStyle = "rgb(255,255,255,0.1)"; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
+// ctx.strokeStyle = "rgb(255,255,255,0.1)"; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
 updatePlatforms();
 updateCat();
 drawPlatforms();
