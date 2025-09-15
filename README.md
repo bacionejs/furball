@@ -33,3 +33,32 @@ But be careful — miss a platform and you’ll pay the price!
   Sound examples by Anders Kaare
 
 - **ChatGPT** – My virtual co-developer who never sleeps, never complains, constantly tells me I'm brilliant, and provided questionable wisdom and "perfect" code snippets.
+
+
+
+
+
+Got it 👍 You want a post-mortem write-up for your README, about the control design choice you mentioned (center of screen vs relative to cat). Here’s a draft you could drop into your repo’s README under a “Post-Mortem” or “Design Notes” section:
+
+
+---
+
+# Post-mortem
+
+I made the jump controls relative to the center of the screen. The reasoning was that if the cat was near the right edge and needed to make a long jump right, the player would have no way to tap “far enough” to send it that direction. Using the screen center seemed like the safest anchor.
+
+In practice, though, this introduced an awkward disconnect: the player’s tap wasn’t about the cat itself but about some invisible axis in the middle of the screen. That feels unintuitive.
+
+The better approach is to make controls relative to the cat’s position:
+If you want to do a long rightward jump but you’re pinned to the right edge, you can just let the cat wrap and then perform the long jump. The “no room to tap” problem doesn’t really matter.
+
+Lesson learned: Sometimes an over-engineered solution (anchoring to the screen center) looks necessary, but in practice, simple, player-centric controls provide a better game feel.
+
+
+---
+
+
+
+
+
+
