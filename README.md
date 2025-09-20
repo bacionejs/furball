@@ -1,4 +1,4 @@
-<h1><a href="https://bacionejs.github.com/furball/" style="text-decoration: none; color: inherit;">Play</a></h1>
+<h1><a href="https://bacionejs.github.io/furball" style="text-decoration: none; color: inherit;">Play</a></h1>
 
 [![Demo – Click to Play](README.jpg)](https://bacionejs.github.io/furball/)
 
