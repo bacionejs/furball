@@ -12,11 +12,6 @@ But be careful — miss a platform and you’ll pay the price!
 
 🎮 How to Play
 - Click / Tap anywhere on the screen to make the cat jump.
-- The jump’s horizontal direction and strength depend on where you tap:
-- Tap on the left side → jump left.
-- Tap on the right side → jump right.
-- Tap closer to the middle → smaller sideways movement.
-- A very faint vertical line appears in the middle to help you orient your taps.
 - Land on new platforms to score points.
 - Falling costs you -5 points (ouch!).
 
@@ -47,6 +42,7 @@ If you want to do a long rightward jump but you’re pinned to the right edge, y
 
 Lesson learned: Sometimes an over-engineered solution (anchoring to the screen center) looks necessary, but in practice, simple, player-centric controls provide a better game feel.
 
+The game in this repo is the director's cut version with more intuitive cat centric jump behavior!
 
 ---
 
